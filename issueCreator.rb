@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require "json"
-require 'dotenv/load'
+require 'dotenv'
 require "net/http"
 
 # The script will take [1..n] file absolute paths as parameters
@@ -17,11 +17,6 @@ class Issue
     @issue_path = path
   end
   
-  # Print error message
-  def abort_script
-    abort("Provide 1..N absolute filepaths in order to upload issues")  
-  end
-
   # Returns the issue path
   def path
     @issue_path
@@ -81,8 +76,14 @@ def project(substring)
   repo
 end
 
+# Print error message
+def abort_script
+  abort("Provide 1..N absolute filepaths in order to upload issues")  
+end
+
 # Uploads the issue passed as arguments
 def upload(issue)
+  Dotenv.load("#{__dir__}/.env")
   # POST /repos/:owner/:repo/issues
   uri = URI.parse("https://api.github.com/repos/WolaApplication/#{project(issue.path)}/issues")
   headers = {'Content.type': 'application/json',
@@ -98,8 +99,9 @@ def upload(issue)
     http.request(request)
   end
 
-  # Send the request
-  p response.body
+  # print the response
+  body = JSON.parse(response.body)
+  body["html_url"]
 end
 
 abort_script if ARGV.length == 0
@@ -107,5 +109,5 @@ abort_script if ARGV.length == 0
 ARGV.each do |path|
   issue = Issue.new(path)
   issue.generate_payload
-  upload(issue)
+  p "Issue URL: #{upload(issue)}"
 end
